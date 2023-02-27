@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
     appendToLI('button', 'textContent', 'edit');
     appendToLI('button', 'textContent', 'remove');
     return li;
-  }
+  } 
   
   form.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -62,6 +62,10 @@ document.addEventListener('DOMContentLoaded', () => {
     input.value = '';
     const li = createLI(text);
     ul.appendChild(li);
+
+    let data = JSON.parse(localStorage.getItem("data"));
+    data.push({id:11,name:li.firstElementChild.textContent,confirmed:"true"})
+    localStorage.setItem("data",JSON.stringify(data));
   });
     
   ul.addEventListener('change', (e) => {
@@ -71,8 +75,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (checked) {
       listItem.className = 'responded';
+      confirmacion(listItem,"true");
     } else {
       listItem.className = '';
+      confirmacion(listItem,"false");
     }
   });
     
@@ -84,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const action = button.textContent;
       const nameActions = {
         remove: () => {
+          eliminarInvitado(li);
           ul.removeChild(li);
         },
         edit: () => {
@@ -93,7 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
           input.value = span.textContent;
           li.insertBefore(input, span);
           li.removeChild(span);
-          button.textContent = 'save';  
+          button.textContent = 'save';
+          localStorage.setItem('editName',span.textContent);
         },
         save: () => {
           const input = li.firstElementChild;
@@ -101,20 +109,84 @@ document.addEventListener('DOMContentLoaded', () => {
           span.textContent = input.value;
           li.insertBefore(span, input);
           li.removeChild(input);
-          button.textContent = 'edit';        
+          button.textContent = 'edit';
+          
+          guardarCambios(span.textContent);
         }
       };
       
       // select and run action in button's name
       nameActions[action]();
     }
-  });  
+  }); 
+  
+ 
+  //debido a problemas varios la carga del archivo local novios.json no me ha sido posible
+  //la resolución se realiza guardando una copia de la lista de objetos de jsonPlaceholder
+  //en localStorage, para su edición y uso
+
+  //carga datos del json
+  async function xhrResolve(url,callback){
+    let xhr = new XMLHttpRequest();
+    xhr.overrideMimeType("application/json");
+    xhr.open("GET",url);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status == "200") {
+            callback(xhr.responseText);
+        }
+    }
+    xhr.send();
+  }
+
+  xhrResolve("https://jsonplaceholder.typicode.com/users",(text)=>{
+    let data = JSON.parse(text);
+    data.forEach(element => {
+      let li = createLI(element.name);
+      let checkLI = li.children[1].childNodes[1];
+      if(element.confirm == "true")checkLI.checked = "true";
+      ul.appendChild(li);
+    });
+    localStorage.setItem('data',JSON.stringify(data));
+  });
+
+
+  function confirmacion(obj,bool){
+    //recibe un LI
+    let nombre = obj.firstElementChild.textContent;
+    let data = JSON.parse(localStorage.getItem("data"));
+    data.forEach(person => {
+      if(person.name == nombre){
+        person.confirm = bool;
+      }
+    });
+    localStorage.setItem("data",JSON.stringify(data));
+  }
+
+  function guardarCambios(nombreNuevo){
+    let data = JSON.parse(localStorage.getItem("data"));
+    console.log(data);
+    data.forEach(person => {
+      if(person.name == localStorage.getItem("editName")){
+        person.name = nombreNuevo;
+      }
+    });
+    localStorage.setItem("data",JSON.stringify(data));
+    localStorage.removeItem("editName");
+  }
+
+  function eliminarInvitado(li){
+    let data = JSON.parse(localStorage.getItem("data"));
+    let index = data.indexOf(li.firstElementChild.textContent);
+    data.splice(index,1);
+    localStorage.setItem("data",JSON.stringify(data));
+  }
+
 });  
   
   
   
   
-  
+
   
   
   
